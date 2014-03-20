@@ -10,6 +10,8 @@
 #import "SVProgressHUD.h"
 #import <QuartzCore/QuartzCore.h>
 
+#import "NUActivityIndicatorView.h"
+
 CGFloat SVProgressHUDRingRadius = 14;
 CGFloat SVProgressHUDRingThickness = 6;
 
@@ -22,7 +24,7 @@ CGFloat SVProgressHUDRingThickness = 6;
 @property (nonatomic, strong, readonly) UIView *hudView;
 @property (nonatomic, strong, readonly) UILabel *stringLabel;
 @property (nonatomic, strong, readonly) UIImageView *imageView;
-@property (nonatomic, strong, readonly) UIActivityIndicatorView *spinnerView;
+@property (nonatomic, strong, readonly) NUActivityIndicatorView *spinnerView;
 
 @property (nonatomic, readwrite) CGFloat progress;
 @property (nonatomic, strong) CAShapeLayer *backgroundRingLayer;
@@ -586,11 +588,9 @@ CGFloat SVProgressHUDRingThickness = 6;
 
 - (UIView *)hudView {
     if(!hudView) {
-        hudView = [[UIView alloc] initWithFrame:CGRectZero];
+        hudView = [[UIToolbar alloc] initWithFrame:CGRectZero];
         hudView.layer.cornerRadius = 10;
-
-        // UIAppearance is used when iOS >= 5.0
-		hudView.backgroundColor = self.hudBackgroundColor;
+        [(UIToolbar*)hudView setTranslucent:YES];
 
         hudView.autoresizingMask = (UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleTopMargin |
                                     UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleLeftMargin);
@@ -637,16 +637,12 @@ CGFloat SVProgressHUDRingThickness = 6;
     return imageView;
 }
 
-- (UIActivityIndicatorView *)spinnerView {
+- (NUActivityIndicatorView *)spinnerView {
     if (spinnerView == nil) {
-        spinnerView = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
-		spinnerView.hidesWhenStopped = YES;
-		spinnerView.bounds = CGRectMake(0, 0, 37, 37);
-
-        // UIAppearance is used when iOS >= 5.0
-        spinnerView.color = self.hudForegroundColor;
+      spinnerView = [[NUActivityIndicatorView alloc] initWithFrame:CGRectMake(0, 0, 60, 60)];
+		  spinnerView.hidesWhenStopped = YES;
     }
-    
+  
     if(!spinnerView.superview)
         [self.hudView addSubview:spinnerView];
     
