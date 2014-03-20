@@ -584,8 +584,9 @@ CGFloat SVProgressHUDRingThickness = 6;
 
 - (UIView *)hudView {
     if(!hudView) {
-        hudView = [[UIToolbar alloc] initWithFrame:CGRectZero];
+        hudView = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, 60, 60)];
         hudView.layer.cornerRadius = 10;
+        hudView.layer.masksToBounds = YES;
         [(UIToolbar*)hudView setTranslucent:YES];
 
         hudView.autoresizingMask = (UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleTopMargin |
