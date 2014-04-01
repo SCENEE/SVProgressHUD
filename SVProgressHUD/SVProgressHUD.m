@@ -51,6 +51,8 @@ static const CGFloat SVProgressHUDRingThickness = 6;
 @property (nonatomic, readonly) CGFloat visibleKeyboardHeight;
 @property (nonatomic, assign) UIOffset offsetFromCenter;
 
+@property NSObject *displaySemaphore;
+
 - (void)showProgress:(float)progress
               status:(NSString*)string
             maskType:(SVProgressHUDMaskType)hudMaskType;
@@ -145,15 +147,40 @@ static const CGFloat SVProgressHUDRingThickness = 6;
     [self showImage:[[self sharedView] hudSuccessImage] status:string];
 }
 
++ (void)showSuccessWithStatus:(NSString *)string exclusive:(BOOL)exclusive
+{
+  [self showImage:[[self sharedView] hudSuccessImage] status:string exclusive:exclusive];
+}
+
 + (void)showErrorWithStatus:(NSString *)string {
     [self showImage:[[self sharedView] hudErrorImage] status:string];
 }
 
-+ (void)showImage:(UIImage *)image status:(NSString *)string {
-    NSTimeInterval displayInterval = [[SVProgressHUD sharedView] displayDurationForString:string];
-    [[self sharedView] showImage:image status:string duration:displayInterval];
++ (void)showErrorWithStatus:(NSString *)string exclusive:(BOOL)exclusive
+{
+  [self showImage:[[self sharedView] hudErrorImage] status:string exclusive:exclusive];
 }
 
++ (void)showImage:(UIImage *)image status:(NSString *)string {
+  [self showImage:image status:string exclusive:NO];
+}
+
++ (void)showImage:(UIImage *)image status:(NSString *)string exclusive:(BOOL)exclusive {
+  
+  if (self.sharedView.displaySemaphore) {return;}
+  
+  NSTimeInterval displayInterval = [[SVProgressHUD sharedView] displayDurationForString:string];
+  [[self sharedView] showImage:image status:string duration:displayInterval];
+
+  if (exclusive) {
+    self.sharedView.displaySemaphore = [[NSObject alloc] init];
+    double delayInSeconds = displayInterval - 0.3f;
+    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+      self.sharedView.displaySemaphore = nil;
+    });
+  }
+}
 
 #pragma mark - Dismiss Methods
 
@@ -164,6 +191,8 @@ static const CGFloat SVProgressHUDRingThickness = 6;
 }
 
 + (void)dismiss {
+  if (  self.sharedView.displaySemaphore ) {return;}
+  
     if ([self isVisible]) {
         [[self sharedView] dismiss];
     }
