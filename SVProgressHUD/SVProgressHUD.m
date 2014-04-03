@@ -167,8 +167,6 @@ static const CGFloat SVProgressHUDRingThickness = 6;
 
 + (void)showImage:(UIImage *)image status:(NSString *)string exclusive:(BOOL)exclusive {
   
-  if (self.sharedView.displaySemaphore) {return;}
-  
   NSTimeInterval displayInterval = [[SVProgressHUD sharedView] displayDurationForString:string];
   [[self sharedView] showImage:image status:string duration:displayInterval];
 
@@ -191,7 +189,7 @@ static const CGFloat SVProgressHUDRingThickness = 6;
 }
 
 + (void)dismiss {
-  if (  self.sharedView.displaySemaphore ) {return;}
+    if (  self.sharedView.displaySemaphore ) {return;}
   
     if ([self isVisible]) {
         [[self sharedView] dismiss];
@@ -473,7 +471,9 @@ static const CGFloat SVProgressHUDRingThickness = 6;
 #pragma mark - Master show/dismiss methods
 
 - (void)showProgress:(float)progress status:(NSString*)string maskType:(SVProgressHUDMaskType)hudMaskType {
-    
+  
+    if (self.displaySemaphore) {return;}
+  
     if(!self.overlayView.superview){
         NSEnumerator *frontToBackWindows = [[[UIApplication sharedApplication]windows]reverseObjectEnumerator];
         
@@ -563,6 +563,8 @@ static const CGFloat SVProgressHUDRingThickness = 6;
 
 
 - (void)showImage:(UIImage *)image status:(NSString *)string duration:(NSTimeInterval)duration {
+    if (self.displaySemaphore) {return;}
+
     self.progress = -1;
     [self cancelRingLayerAnimation];
     
@@ -592,6 +594,8 @@ static const CGFloat SVProgressHUDRingThickness = 6;
 }
 
 - (void)dismiss {
+    if (self.displaySemaphore) {return;}
+
     NSDictionary *userInfo = [self notificationUserInfo];
     [[NSNotificationCenter defaultCenter] postNotificationName:SVProgressHUDWillDisappearNotification
                                                         object:nil
