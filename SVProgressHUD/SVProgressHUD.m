@@ -143,36 +143,38 @@ static const CGFloat SVProgressHUDRingThickness = 6;
 
 #pragma mark - Show then dismiss methods
 
+static NSTimeInterval kDisplayIntervalError = 0.9f * 2;
+static NSTimeInterval kDisplayIntervalSuccess = 0.9f;
+
 + (void)showSuccessWithStatus:(NSString *)string {
-    [self showImage:[[self sharedView] hudSuccessImage] status:string];
+    [self showImage:[[self sharedView] hudSuccessImage] status:string duraction:kDisplayIntervalSuccess];
 }
 
 + (void)showSuccessWithStatus:(NSString *)string exclusive:(BOOL)exclusive
 {
-  [self showImage:[[self sharedView] hudSuccessImage] status:string exclusive:exclusive];
+  [self showImage:[[self sharedView] hudSuccessImage] status:string duration:kDisplayIntervalSuccess exclusive:exclusive];
 }
 
 + (void)showErrorWithStatus:(NSString *)string {
-    [self showImage:[[self sharedView] hudErrorImage] status:string];
+  [self showImage:[[self sharedView] hudErrorImage] status:string duraction:kDisplayIntervalError];
 }
 
 + (void)showErrorWithStatus:(NSString *)string exclusive:(BOOL)exclusive
 {
-  [self showImage:[[self sharedView] hudErrorImage] status:string exclusive:exclusive];
+  [self showImage:[[self sharedView] hudErrorImage] status:string duration:kDisplayIntervalError exclusive:exclusive];
 }
 
-+ (void)showImage:(UIImage *)image status:(NSString *)string {
-  [self showImage:image status:string exclusive:NO];
++ (void)showImage:(UIImage *)image status:(NSString *)string duraction:(NSTimeInterval)duration {
+  [self showImage:image status:string duration:duration exclusive:NO];
 }
 
-+ (void)showImage:(UIImage *)image status:(NSString *)string exclusive:(BOOL)exclusive {
-  
-  NSTimeInterval displayInterval = [[SVProgressHUD sharedView] displayDurationForString:string];
-  [[self sharedView] showImage:image status:string duration:displayInterval];
++ (void)showImage:(UIImage *)image status:(NSString *)string duration:(NSTimeInterval)duration exclusive:(BOOL)exclusive
+{
+  [[self sharedView] showImage:image status:string duration:duration];
 
   if (exclusive) {
     self.sharedView.displaySemaphore = [[NSObject alloc] init];
-    double delayInSeconds = displayInterval - 0.3f;
+    double delayInSeconds = duration - 0.3f;
     dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
     dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
       self.sharedView.displaySemaphore = nil;
