@@ -30,7 +30,7 @@ static UIImage *SVProgressHUDSuccessImage;
 static UIImage *SVProgressHUDErrorImage;
 
 static const CGFloat SVProgressHUDRingRadius = 18;
-static const CGFloat SVProgressHUDRingNoTextRadius = 24;
+static const CGFloat SVProgressHUDRingNoTextRadius = 28;
 static const CGFloat SVProgressHUDParallaxDepthPoints = 10;
 
 @interface SVProgressHUD ()
@@ -342,7 +342,7 @@ static const CGFloat SVProgressHUDParallaxDepthPoints = 10;
 	self.hudView.bounds = CGRectMake(0, 0, hudWidth, hudHeight);
     
     if(string)
-        self.imageView.center = CGPointMake(CGRectGetWidth(self.hudView.bounds)/2, 36);
+        self.imageView.center = CGPointMake(CGRectGetWidth(self.hudView.bounds)/2, _indefiniteAnimatedView.radius * 2);
 	else
        	self.imageView.center = CGPointMake(CGRectGetWidth(self.hudView.bounds)/2, CGRectGetHeight(self.hudView.bounds)/2);
 	
@@ -356,11 +356,11 @@ static const CGFloat SVProgressHUDParallaxDepthPoints = 10;
         self.indefiniteAnimatedView.radius = SVProgressHUDRingRadius;
         [self.indefiniteAnimatedView sizeToFit];
         
-        CGPoint center = CGPointMake((CGRectGetWidth(self.hudView.bounds)/2), 36);
+        CGPoint center = CGPointMake((CGRectGetWidth(self.hudView.bounds)/2), _indefiniteAnimatedView.radius * 2);
         self.indefiniteAnimatedView.center = center;
         
         if(self.progress != -1)
-            self.backgroundRingLayer.position = self.ringLayer.position = CGPointMake((CGRectGetWidth(self.hudView.bounds)/2), 36);
+            self.backgroundRingLayer.position = self.ringLayer.position = CGPointMake((CGRectGetWidth(self.hudView.bounds)/2), _indefiniteAnimatedView.radius * 2);
 	}
     else {
         self.indefiniteAnimatedView.radius = SVProgressHUDRingNoTextRadius;
@@ -833,8 +833,8 @@ static const CGFloat SVProgressHUDParallaxDepthPoints = 10;
         _hudView.backgroundColor = SVProgressHUDBackgroundColor;
         _hudView.layer.cornerRadius = 14;
         _hudView.layer.masksToBounds = YES;
-        
-        _hudView.autoresizingMask = (UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleTopMargin |
+      
+       _hudView.autoresizingMask = (UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleTopMargin |
                                      UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleLeftMargin);
       
       if ([_hudView respondsToSelector:@selector(addMotionEffect:)]) {
@@ -908,7 +908,8 @@ static const CGFloat SVProgressHUDParallaxDepthPoints = 10;
 
 @interface SVIndefiniteAnimatedView ()
 
-@property (nonatomic, strong) CAShapeLayer *indefiniteAnimatedLayer;
+@property (nonatomic, strong) CALayer *indefiniteAnimatedLayer;
+@property (nonatomic, strong) CAShapeLayer *maskLayer;
 
 @end
 
@@ -940,32 +941,38 @@ static const CGFloat SVProgressHUDParallaxDepthPoints = 10;
     layer.position = CGPointMake(self.bounds.size.width - layer.bounds.size.width / 2, self.bounds.size.height - layer.bounds.size.height / 2);
 }
 
-- (CAShapeLayer*)indefiniteAnimatedLayer {
+- (CALayer*)indefiniteAnimatedLayer {
     if(!_indefiniteAnimatedLayer) {
         CGPoint arcCenter = CGPointMake(self.radius+self.strokeThickness/2+5, self.radius+self.strokeThickness/2+5);
         CGRect rect = CGRectMake(0, 0, arcCenter.x*2, arcCenter.y*2);
-        
+      
+      
+        _indefiniteAnimatedLayer = [CALayer layer];
+        _indefiniteAnimatedLayer.frame = rect;
+
+        UIImage *image = [UIImage imageNamed:@"SVProgressHUD.bundle/angle-mask@2x.png"];
+
+        _indefiniteAnimatedLayer.contents =  (id)[image CGImage];
+      
         UIBezierPath* smoothedPath = [UIBezierPath bezierPathWithArcCenter:arcCenter
                                                                     radius:self.radius
                                                                 startAngle:M_PI*3/2
                                                                   endAngle:M_PI/2+M_PI*5
                                                                  clockwise:YES];
         
-        _indefiniteAnimatedLayer = [CAShapeLayer layer];
-        _indefiniteAnimatedLayer.contentsScale = [[UIScreen mainScreen] scale];
-        _indefiniteAnimatedLayer.frame = rect;
-        _indefiniteAnimatedLayer.fillColor = [UIColor clearColor].CGColor;
-        _indefiniteAnimatedLayer.strokeColor = self.strokeColor.CGColor;
-        _indefiniteAnimatedLayer.lineWidth = self.strokeThickness;
-        _indefiniteAnimatedLayer.lineCap = kCALineCapRound;
-        _indefiniteAnimatedLayer.lineJoin = kCALineJoinBevel;
-        _indefiniteAnimatedLayer.path = smoothedPath.CGPath;
-        
-        CALayer *maskLayer = [CALayer layer];
-        maskLayer.contents = (id)[[UIImage imageNamed:@"SVProgressHUD.bundle/angle-mask@2x.png"] CGImage];
+        CAShapeLayer *maskLayer = [CAShapeLayer layer];
         maskLayer.frame = _indefiniteAnimatedLayer.bounds;
+        maskLayer.contentsScale = [[UIScreen mainScreen] scale];
+        maskLayer.fillColor = [UIColor clearColor].CGColor;
+        maskLayer.strokeColor = self.strokeColor.CGColor;
+        maskLayer.lineWidth = self.strokeThickness;
+        maskLayer.lineCap = kCALineCapRound;
+        maskLayer.lineJoin = kCALineJoinBevel;
+        maskLayer.path = smoothedPath.CGPath;
+
         _indefiniteAnimatedLayer.mask = maskLayer;
-        
+        _maskLayer = maskLayer;
+      
         NSTimeInterval animationDuration = 1;
         CAMediaTimingFunction *linearCurve = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
         
@@ -978,7 +985,7 @@ static const CGFloat SVProgressHUDParallaxDepthPoints = 10;
         animation.repeatCount = INFINITY;
         animation.fillMode = kCAFillModeForwards;
         animation.autoreverses = NO;
-        [_indefiniteAnimatedLayer.mask addAnimation:animation forKey:@"rotate"];
+        [_indefiniteAnimatedLayer addAnimation:animation forKey:@"rotate"];
         
         CAAnimationGroup *animationGroup = [CAAnimationGroup animation];
         animationGroup.duration = animationDuration;
@@ -1020,12 +1027,12 @@ static const CGFloat SVProgressHUDParallaxDepthPoints = 10;
 
 - (void)setStrokeColor:(UIColor *)strokeColor {
     _strokeColor = strokeColor;
-    _indefiniteAnimatedLayer.strokeColor = strokeColor.CGColor;
+    _maskLayer.strokeColor = strokeColor.CGColor;
 }
 
 - (void)setStrokeThickness:(CGFloat)strokeThickness {
     _strokeThickness = strokeThickness;
-    _indefiniteAnimatedLayer.lineWidth = _strokeThickness;
+    _maskLayer.lineWidth = _strokeThickness;
 }
 
 - (CGSize)sizeThatFits:(CGSize)size {
